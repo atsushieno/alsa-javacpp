@@ -91,6 +91,8 @@ afterEvaluate {
             }
         }
 
+        apply from: "${rootDir}/publish-module.gradle"
+
         // keep it as is. It is replaced by CI release builds
         signing {}
     }
