@@ -1,0 +1,20 @@
+[versions]
+junit = "4.13.2"
+junit-jupiter-api = "5.9.1"
+
+gradle-javacpp = "1.5.10"
+
+alsa-javacpp = "0.1"
+
+[libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter-api" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter-api" }
+
+[plugins]
+gradleJavacppBuild = { id = "org.bytedeco.gradle-javacpp-build", version.ref = "gradle-javacpp" }
+gradleJavacppPlatform = { id = "org.bytedeco.gradle-javacpp-platform", version.ref = "gradle-javacpp" }
+
+[bundles]
+
