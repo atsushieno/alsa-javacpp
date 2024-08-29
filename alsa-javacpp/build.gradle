@@ -16,6 +16,7 @@ java {
 
 dependencies {
     api "org.bytedeco:javacpp:$javacppVersion"
+    javacppPlatform "org.bytedeco:javacpp-platform:$javacppVersion"
     javacppPlatform "$targetArtifactName:$version:linux-x86_64"
     javacppPlatform "$targetArtifactName:$version:linux-arm64"
 
@@ -57,43 +58,77 @@ javacppBuildCompiler {
     deleteJniFiles false
 }
 
-afterEvaluate {
-    afterEvaluate {
-        publishing {
-            publications {
-                maven(MavenPublication) {
-                    pom {
-                        name.set('alsa-javacpp')
-                        description.set('(partial) ALSA JNI binding using JavaCPP')
-                        url.set('https://github.com/atsushieno/alsa-javacpp')
-                        scm { url.set('https://github.com/atsushieno/alsa-javacpp') }
-                        licenses {
-                            license {
-                                name.set('the MIT License')
-                                url.set('https://github.com/atsushieno/alsa-javacpp/blob/main/LICENSE')
-                            }
-                        }
-                        developers {
-                            developer {
-                                id.set('atsushieno')
-                                name.set('Atsushi Eno')
-                                email.set('atsushieno@gmail.com')
-                            }
-                        }
-                    }
-                }
+javadoc {
+    failOnError = false
+    //from javadoc.destinationDir
+}
 
-                maven(MavenPublication) {
-                    groupId = group
-                    artifactId = "alsa-javacpp"
-                    from components.java
-                }
-            }
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
+    archiveClassifier.set('javadoc')
+    from javadoc.destinationDir
+}
+
+tasks.register('sourcesJar', Jar) {
+    dependsOn classes
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+def pomClosure = {
+    name.set('alsa-javacpp')
+    description.set('(partial) ALSA JNI binding using JavaCPP')
+    url.set('https://github.com/atsushieno/alsa-javacpp')
+    scm { url.set('https://github.com/atsushieno/alsa-javacpp') }
+    licenses {
+        license {
+            name.set('the MIT License')
+            url.set('https://github.com/atsushieno/alsa-javacpp/blob/main/LICENSE')
         }
-
-        apply from: "${rootDir}/publish-module.gradle"
-
-        // keep it as is. It is replaced by CI release builds
-        signing {}
+    }
+    developers {
+        developer {
+            id.set('atsushieno')
+            name.set('Atsushi Eno')
+            email.set('atsushieno@gmail.com')
+        }
     }
 }
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = group
+            from components.java
+            artifacts = [jar, javacppJar, javadocJar, sourcesJar] + javacppBuild.existingArtifacts(configurations.javacppPlatform)
+            pom pomClosure
+        }
+        mavenJavacppPlatform(MavenPublication) {
+            groupId project.group
+            artifactId project.name + "-platform"
+            artifacts = [javacppPlatformJar, javacppPlatformJavadocJar, javacppPlatformSourcesJar]
+            pom pomClosure
+            pom.withXml javacppBuild.xmlAction(configurations.javacppPlatform)
+        }
+    }
+
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            credentials {
+                username = ossrhUsername
+                password = ossrhPassword
+            }
+        }
+    }
+}
+
+// keep it as is. It is replaced by CI release builds
+signing {}
